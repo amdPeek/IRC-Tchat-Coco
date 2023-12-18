@@ -46,7 +46,7 @@ class Server:
 		self.socket_server.bind((socket.gethostname(),5500))
 		self.prGreen('''
 
-			  _			 ___				 ___  _   _ 
+			  _			    ___				    ___  _   _ 
 			 /   _   _  _ __ |  _ |_   _. _|_ __ |  |_) /  
 			 \_ (_) (_ (_)   | (_ | | (_|  |_   _|_ | \ \_ 
 											   
