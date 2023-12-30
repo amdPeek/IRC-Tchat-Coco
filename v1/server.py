@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import socket
 import sys
 import time, threading
@@ -77,7 +79,7 @@ class Server:
 				else:
 					if (cmd[1])[0] == '[' and (cmd[1])[len(cmd[1])-1] == ']': #specifying a canal
 					   	canal_name = cmd[1:-1]
-					   	self.send_all(user,"TO-DO",canal_name)
+					   	self.send_all(user,"//TO-DO",canal_name)
 					else: #messaging in the default channel 
 						msg = " ".join(cmd[1:])
 						self.send_all(user,msg,"default")
@@ -94,6 +96,8 @@ class Server:
 	def handle_user(self,user):
 		print(f"  >>>> New user {user.get_nickname()}")
 
+		self.send_all(User(None,None,"SERVER"),f"  >>>> New user {user.get_nickname()}","default")
+
 		#by default we add all users to the default channel
 		(self.channel_list["default"]).add_user(user)
 
@@ -103,6 +107,8 @@ class Server:
 			data = user.get_conn().recv(1024).decode()
 			if not data:
 				print(f"  >>>> {user.get_addr()} has left")
+				self.list_current_user.remove(user)
+				self.send_all(User(None,None,"SERVER"),f"  >>>> {user.get_addr()} has left","default")
 				break
 			self.parse_command(user,data)
 			
