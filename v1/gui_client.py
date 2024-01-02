@@ -3,9 +3,12 @@ import tkinter.font as tkFont
 import sys
 import socket 
 import threading
+import pickle
 
 class App:
-    def __init__(self):     
+    def __init__(self,nickname):     
+        self.nickname = nickname
+
         # setting title
         self.root = Tk()
         self.root.title("IRC client")
@@ -70,9 +73,27 @@ class App:
         self.listen_thread = threading.Thread(target=self.listen)
         self.listen_thread.start()    
 
+        #send the username
+        self.send_nickname()
+
         self.root.mainloop()
 
         self.client_socket.close() # TO-DO : à bouger dans une fonction appropriée 
+
+    def send_nickname(self):
+        to_send = f"/setnickname {self.nickname}"
+        self.client_socket.send(to_send.encode())
+
+    def update_user_list(self,newlist):
+        self.user_listbox.delete(0, END)
+        for e in newlist[1:]:
+            self.user_listbox.insert(END, e)
+
+    def update_channel_list(self,newlist):
+        self.channel_listbox.delete(0, END)
+        for e in newlist[1:]:
+            self.channel_listbox.insert(END, e)
+
 
     def send_cmd(self):
         texte_saisi = self.entry_cmd.get()
@@ -81,7 +102,7 @@ class App:
 
     def insert_chat_area(self,data):
         self.chat_area.config(state="normal")
-        self.chat_area.insert(END, data + "\n")
+        self.chat_area.insert(END, str(data) + "\n")
         self.chat_area.config(state="disabled")
 
     def on_closing(self):
@@ -90,21 +111,43 @@ class App:
 
     def listen(self):
         while True:
-            data = self.client_socket.recv(1024).decode()
+            data = self.client_socket.recv(1024)
             if not data: 
                 return
 
-            #parsing incoming data
-            my_str = str(data)
-            print(my_str)
-            self.insert_chat_area(my_str)
+            try:
+                if isinstance(data, bytes):
+                    received_data = pickle.loads(data)
+                    if isinstance(received_data, list):
+                        match received_data[0]:
+                            case "channels_list":
+                                #print("J'ai reçu la liste des channels")
+                                #print(received_data)
+                                self.update_channel_list(received_data)
+                            case "users_list":
+                                #print("J'ai reçu la liste des users")
+                                #print(received_data)
+                                self.update_user_list(received_data)
+                            case _:
+                                print("Unable to read this list")
+                    elif isinstance(received_data, str):
+                        #print("J'ai reçu une str")
+                        #print(received_data)
+                        self.insert_chat_area(received_data)
+                else:
+                    print("Données reçues non valides. Attendez-vous à des bytes.")
+            except pickle.UnpicklingError:
+                print("Erreur lors de la désérialisation du message.")
+     
+            
 
+       
 
 if __name__ == "__main__":
 
     if len(sys.argv) < 2:
         print("usage : gui_client.py <nickname>")
     else:
-        app = App()
+        app = App(sys.argv[1])
 
         
